@@ -3,7 +3,7 @@ import json
 import datetime
 import os
 
-from transformers import Qwen2_5_VLForConditionalGeneration, AutoTokenizer, AutoProcessor
+from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
 from qwen_vl_utils import process_vision_info
 
 from torch.utils.data import Dataset
@@ -25,8 +25,8 @@ deepspeed_plugin = DeepSpeedPlugin(
                     # 2 - optimizer state + gradient partitioning
                     # 3 - optimizer state + gradient + parameter partitioning (most memory efficient)
     gradient_accumulation_steps=2,  # Accumulate gradients over 2 steps before optimization
-    zero3_save_16bit_model=True, # Save models in 16-bit precision when using ZeRO stage 3
-                                # Reduces model checkpoint size by 50% while maintaining model quality
+    zero3_save_16bit_model=True,    # Save models in 16-bit precision when using ZeRO stage 3
+                                    # Reduces model checkpoint size by 50% while maintaining model quality
     offload_optimizer_device="cpu", # Offload optimizer computation to CPU to drastically reduce GPU memory usage
     offload_param_device="cpu"      # Offload model parameters to CPU to further decrease GPU memory consumption
 )
@@ -37,23 +37,25 @@ print("Init deepspeed plugin done")
 print("Init accelerator...")
 accelerator = Accelerator(deepspeed_plugin=deepspeed_plugin)
 print("Init accelerator done")
+
 '''
-Under the above configuration, when launching the script with the command:
-CUDA_VISIBLE_DEVICES="0,1" accelerate launch --mixed_precision=bf16 --dynamo_backend=no --num_machines=1 --num_processes=2 --use_deepspeed finetune_distributed.py,
-the final DeepSpeed configuration required will be generated during the subsequent execution of accelerator.prepare(). The configuration details are as follows:
+With the above configuration, when launching the script with below command:
+$TORCH_DISTRIBUTED_DEBUG=DETAIL ACCELERATE_DEBUG_VERBOSITY="debug" CUDA_VISIBLE_DEVICES="4,5,6,7" accelerate launch --main_process_port=29919 --mixed_precision=bf16 --dynamo_backend=no --num_machines=1 --num_processes=4 --use_deepspeed finetune_distributed.py 
+
+The final DeepSpeed configuration required will be generated during the subsequent execution of accelerator.prepare(). The configuration details are as follows:
 
 json = {
-    "train_batch_size": 4, 
+    "train_batch_size": 8, 
     "train_micro_batch_size_per_gpu": 1, 
     "gradient_accumulation_steps": 2, 
     "zero_optimization": {
         "stage": 3, 
         "offload_optimizer": {
-            "device": "none", 
+            "device": "cpu", 
             "nvme_path": null
         }, 
         "offload_param": {
-            "device": "none", 
+            "device": "cpu", 
             "nvme_path": null
         }, 
         "stage3_gather_16bit_weights_on_model_save": true
@@ -68,7 +70,6 @@ json = {
     }, 
     "zero_allow_untested_optimizer": true
 }
-
 '''
 
 '''
@@ -138,7 +139,7 @@ def collate_fn(batch, processor, device):
     # [151644, 77091]
     # (Pdb++) processor.tokenizer.encode("<|im_end|>")
     # [151645]
-    
+
     messages = [m['messages'] for m in batch]
     texts = [processor.apply_chat_template(msg, tokenize=False, add_generation_prompt=False) for msg in messages]
     image_inputs, video_inputs = process_vision_info(messages)
@@ -208,7 +209,6 @@ def train():
     # For why, read below.
     # Typically, in training, when batch size of training dataloader is > 1, it is often we need pad shorter inputs to the same length.
     # To pad, we often add "padding_token_id" to the right side of shorter inputs to make them the same length and set 0 in attention_mask for those padding_token_id.
-    # It makes casual_mask easier to build by attention mask. for more detail, see *** notes.txt *** of this repo.
     # BTW, in batching inference, we must use "padding_side" left, as generation usually uses the last token of output list of tokens.
     # 
     # If you like to read more, here are more discussions about padding and padding side:
@@ -236,10 +236,14 @@ def train():
                 outputs = model(**inputs, labels=labels)
                 loss = outputs.loss
                 accelerator.backward(loss)
-                optimizer.step() # If use deepseed,`accelerator.backward(loss)` is doing that automatically. Therefore, this function will not work.
-                optimizer.zero_grad() # If use deepseed,`accelerator.backward(loss)` is doing that automatically. Therefore, this function will not work.
+                # If use deepseed,`accelerator.backward(loss)` is doing that automatically. Therefore, this function will not work. 
+                # For detail, see https://github.com/huggingface/accelerate/blob/main/src/accelerate/utils/deepspeed.py , DeepSpeedOptimizerWrapper.step is an "pass" function.
+                optimizer.step() 
+                # If use deepseed,`accelerator.backward(loss)` is doing that automatically. Therefore, this function will not work.
+                # For detail, see https://github.com/huggingface/accelerate/blob/main/src/accelerate/utils/deepspeed.py , DeepSpeedOptimizerWrapper.zero_grad is an "pass" function.
+                optimizer.zero_grad() 
                 if accelerator.is_local_main_process:
-                    logger.info(f"Batch {steps} of epoch {epoch + 1}/{epochs}, training loss : {loss.item()}")
+                    logger.info(f"Batch {steps} of epoch {epoch + 1}/{epochs}, training loss : {loss.item():.10f}")
 
     # Synchronize all processes to ensure training completion before saving the model.
     accelerator.wait_for_everyone()

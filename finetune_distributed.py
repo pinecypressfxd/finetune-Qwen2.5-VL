@@ -15,6 +15,7 @@ from util.logutil import init_logger, get_logger
 
 from accelerate import Accelerator, DeepSpeedPlugin
 
+print("Init deepspeed plugin...")
 # Create a DeepSpeedPlugin configuration object to customize DeepSpeed integration settings。
 deepspeed_plugin = DeepSpeedPlugin(
     zero_stage=3,   # Enable ZeRO (Zero Redundancy Optimizer) stage 3 optimization
@@ -27,11 +28,13 @@ deepspeed_plugin = DeepSpeedPlugin(
     zero3_save_16bit_model=True # Save models in 16-bit precision when using ZeRO stage 3
                                 # Reduces model checkpoint size by 50% while maintaining model quality
 )
-
+print("Init deepspeed plugin done")
 # Initialize the Hugging Face Accelerator with DeepSpeed integration
 # Accelerator provides a unified interface for distributed training across various backends
 # (TPU, multi-GPU, DeepSpeed, etc.) while maintaining compatibility with PyTorch code
+print("Init accelerator...")
 accelerator = Accelerator(deepspeed_plugin=deepspeed_plugin)
+print("Init accelerator done")
 '''
 Under the above configuration, when launching the script with the command:
 CUDA_VISIBLE_DEVICES="0,1" accelerate launch --mixed_precision=bf16 --dynamo_backend=no --num_machines=1 --num_processes=2 --use_deepspeed finetune_distributed.py,
@@ -188,7 +191,7 @@ def train():
     #     attn_implementation="flash_attention_2",
     #     device_map="auto",
     # )
-    
+    print("Loading model...")
     model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
         "Qwen/Qwen2.5-VL-3B-Instruct", torch_dtype="bfloat16", device_map="auto"
     )

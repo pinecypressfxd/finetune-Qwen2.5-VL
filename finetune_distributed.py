@@ -25,8 +25,10 @@ deepspeed_plugin = DeepSpeedPlugin(
                     # 2 - optimizer state + gradient partitioning
                     # 3 - optimizer state + gradient + parameter partitioning (most memory efficient)
     gradient_accumulation_steps=2,  # Accumulate gradients over 2 steps before optimization
-    zero3_save_16bit_model=True # Save models in 16-bit precision when using ZeRO stage 3
+    zero3_save_16bit_model=True, # Save models in 16-bit precision when using ZeRO stage 3
                                 # Reduces model checkpoint size by 50% while maintaining model quality
+    offload_optimizer_device="cpu", # Offload optimizer computation to CPU to drastically reduce GPU memory usage
+    offload_param_device="cpu"      # Offload model parameters to CPU to further decrease GPU memory consumption
 )
 print("Init deepspeed plugin done")
 # Initialize the Hugging Face Accelerator with DeepSpeed integration
@@ -214,7 +216,7 @@ def train():
     # https://github.com/pytorch/pytorch/issues/110213
     # transformers/models/qwen2_vl/modeling_qwen2_vl.py: causal_mask = AttentionMaskConverter._unmask_unattended(causal_mask, min_dtype)
     
-    processor = AutoProcessor.from_pretrained("Qwen/Qwen2.5-VL-3B-Instruct", min_pixels=256*28*28, max_pixels=512*28*28, padding_side="right")
+    processor = AutoProcessor.from_pretrained("Qwen/Qwen2.5-VL-3B-Instruct", min_pixels=128*28*28, max_pixels=256*28*28, padding_side="right")
     train_loader = DataLoader(
         ToyDataSet("train_data/data.json"),
         batch_size=1,
@@ -230,12 +232,12 @@ def train():
         for batch in train_loader:
             steps += 1
             with accelerator.accumulate(model):
-                optimizer.zero_grad()
                 inputs, labels = batch
                 outputs = model(**inputs, labels=labels)
                 loss = outputs.loss
                 accelerator.backward(loss)
-                optimizer.step()
+                optimizer.step() # If use deepseed,`accelerator.backward(loss)` is doing that automatically. Therefore, this function will not work.
+                optimizer.zero_grad() # If use deepseed,`accelerator.backward(loss)` is doing that automatically. Therefore, this function will not work.
                 if accelerator.is_local_main_process:
                     logger.info(f"Batch {steps} of epoch {epoch + 1}/{epochs}, training loss : {loss.item()}")
 

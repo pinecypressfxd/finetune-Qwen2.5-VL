@@ -25,7 +25,26 @@ I have a WeChat subscription account "Backpropagation", where I occasionally wri
 %conda activate qwen-vl-2.5
 %pip install -r requirements.txt
 ```
-you can run the following command to begin:
+**Note:**  
+```
+# When run "%pip install -r requirements.txt", it will install "deepspeed" package, which need nvcc tool. 
+# Below is my environment configuration:
+%export LD_LIBRARY_PATH=:/usr/local/cuda/lib64
+%export CUDA_HOME=/usr/local/cuda
+%export PATH=$PATH:/usr/local/cuda/bin
+
+%which nvcc
+/usr/local/cuda/bin/nvcc
+
+%nvcc --version
+nvcc: NVIDIA (R) Cuda compiler driver
+Copyright (c) 2005-2024 NVIDIA Corporation
+Built on Thu_Mar_28_02:18:24_PDT_2024
+Cuda compilation tools, release 12.4, V12.4.131
+Build cuda_12.4.r12.4/compiler.34097967_0
+```
+
+You can run the following command to begin:
 ```bash
 ./finetune_distributed.sh # Note that the CUDA_VISIBLE_DEVICES variable in this file should be set to the appropriate value
 ```   

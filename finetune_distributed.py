@@ -193,7 +193,7 @@ def train():
     # )
     print("Loading model...")
     model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-        "Qwen/Qwen2.5-VL-3B-Instruct", torch_dtype="bfloat16", device_map="auto"
+        "Qwen/Qwen2.5-VL-3B-Instruct", torch_dtype="bfloat16"
     )
 
 

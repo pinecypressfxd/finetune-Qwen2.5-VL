@@ -53,6 +53,7 @@ You can run the following command to begin:
 
 ---
 ```bash
+%export CUDA_VISIBLE_DEVICES="4"
 %python test_on_trained_model_by_us.py # Test our fine-tuned or retrained Qwen2.5-VL 3B model
 ```   
 Note: The test_on_trained_model_by_us.py file defines model_dir. If you have fine-tuned multiple models, you can modify this file to specify the path of your fine-tuned model.

@@ -2,7 +2,7 @@ from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
 from qwen_vl_utils import process_vision_info
 from pprint import pprint
 
-model_dir = "train_output/20250208164938/"
+model_dir = "train_output/20250208213817/"
 # default: Load the model on the available device(s)
 model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
     model_dir, torch_dtype="bfloat16", device_map="auto"

@@ -224,7 +224,7 @@ def train():
     )
 
     model.train()
-    epochs = 10
+    epochs = 4
     optimizer = AdamW(model.parameters(), lr=1e-5)
     model, optimizer, train_loader = accelerator.prepare(model, optimizer, train_loader)
     for epoch in range(epochs):
@@ -250,10 +250,12 @@ def train():
     # Unwrap the model from distributed training wrappers
     unwrapped_model = accelerator.unwrap_model(model)
     # Save the model using HuggingFace's pretrained format
+
     unwrapped_model.save_pretrained(
         output_dir,
         is_main_process=accelerator.is_main_process,# Only save from main process to avoid conflicts
         save_function=accelerator.save,
+        max_shard_size="20GB", # make sure only 1 shard. default is 5GB, ideally it should be 2 shards, however this function will create 2 folders, one folder has 3 files: model-00001-of-00002.safetensors, model-00002-of-00002.safetensors and model.safetensors; the other folder has model.safetensors file. They have some duplicated keys. Need investigate.
         state_dict=accelerator.get_state_dict(model),# Get complete state dict including optimizer states (critical for DeepSpeed)
     )
     if accelerator.is_local_main_process:

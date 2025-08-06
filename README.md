@@ -114,4 +114,4 @@ The comparison script generates:
    - `training_comparison.json`: Detailed comparison metrics
 
 The final comparision result is as follows:
-<img src="comparison_output/training_comparison.png" width="100%" height="100%"> 
+<img src="readme_imgs/training_comparison.png" width="100%" height="100%"> 

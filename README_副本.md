@@ -2,10 +2,6 @@
 
 
 ### News/Updates
-* 2025/08/06
-  * Added LoRA (Low-Rank Adaptation) fine-tuning support for more efficient training.
-  * Updated training scripts with improved loss tracking and visualization.
-  * Added comprehensive comparison between full fine-tuning and LoRA approaches.
 * 2025/02/08
   * First version of the fine-tuning code is released.
 
@@ -25,7 +21,7 @@ I have a WeChat subscription account "Backpropagation", where I occasionally wri
 ```bash
 %git clone https://github.com/zhangfaen/finetune-Qwen2.5-VL
 %cd finetune-Qwen2.5-VL
-%conda create --name qwen-vl-2.5 python=3.135
+%conda create --name qwen-vl-2.5 python=3.102
 %conda activate qwen-vl-2.5
 %pip install -r requirements.txt
 ```
@@ -71,12 +67,4 @@ Overall, the fine-tuned model seems to have not been greatly affected in perform
 <img src="readme_imgs/4.jpg" width="100%" height="70%">   
 <img src="readme_imgs/2.jpg" width="100%" height="70%">   
 It can be seen that the training loss is decreasing, indicating that the model has converged during the training process.
-
-### LoRA Fine-tuning Results
-
-The following image shows the loss history during LoRA fine-tuning, demonstrating training with reduced parameter updates:
-
-<img src="readme_imgs/5.png" width="100%" height="70%">
-
-LoRA fine-tuning provides a more memory-efficient alternative to full fine-tuning while maintaining good performance. The loss curve shows stable convergence during training.
 

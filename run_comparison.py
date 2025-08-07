@@ -1,53 +1,43 @@
 #!/usr/bin/env python3
 """
-Script to run LoRA and full fine-tuning comparison.
-This script will run both training methods and generate comparison plots.
+Script to run LoRA and full fine-tuning comparison with efficiency measurement.
+This script will run both training methods and generate comprehensive comparison plots.
 """
 
 import os
 import json
-import subprocess
 import datetime
 from pathlib import Path
+
+# Import training function from the main training script
+import sys
+sys.path.append('.')
+from LoRA_finetune_distributed import train
 
 def run_training_with_lora():
     """Run training with LoRA enabled."""
     print("Starting LoRA training...")
     
-    # Set environment variable to enable LoRA
-    env = os.environ.copy()
-    env['USE_LORA'] = '1'
-    
-    # Run the training script
-    result = subprocess.run([
-        'python', 'finetune_distributed.py'
-    ], env=env, capture_output=True, text=True)
-    
-    if result.returncode == 0:
+    try:
+        # Call training function directly with LoRA enabled
+        train(use_lora=True)
         print("LoRA training completed successfully")
         return True
-    else:
-        print(f"LoRA training failed: {result.stderr}")
+    except Exception as e:
+        print(f"LoRA training failed: {e}")
         return False
 
 def run_training_without_lora():
     """Run training without LoRA (full fine-tuning)."""
     print("Starting full fine-tuning...")
     
-    # Set environment variable to disable LoRA
-    env = os.environ.copy()
-    env['USE_LORA'] = '0'
-    
-    # Run the training script
-    result = subprocess.run([
-        'python', 'finetune_distributed.py'
-    ], env=env, capture_output=True, text=True)
-    
-    if result.returncode == 0:
+    try:
+        # Call training function directly with LoRA disabled
+        train(use_lora=False)
         print("Full fine-tuning completed successfully")
         return True
-    else:
-        print(f"Full fine-tuning failed: {result.stderr}")
+    except Exception as e:
+        print(f"Full fine-tuning failed: {e}")
         return False
 
 def find_latest_output_dir():
@@ -127,7 +117,7 @@ def main():
             # Import the comparison function
             import sys
             sys.path.append('.')
-            from finetune_distributed import compare_training_methods
+            from LoRA_finetune_distributed import compare_training_methods
             
             # Create a simple logger for the comparison
             import logging

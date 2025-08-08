@@ -4,8 +4,8 @@
 ### News/Updates
 * 2025/08/06
   * Added LoRA (Low-Rank Adaptation) fine-tuning support for more efficient training.
-  * Updated training scripts with improved loss tracking and visualization.
   * Added comprehensive comparison between full fine-tuning and LoRA approaches.
+  * Updated all dependencies to the latest versions, new version can be found in the requirements.
 * 2025/02/08
   * First version of the fine-tuning code is released.
 

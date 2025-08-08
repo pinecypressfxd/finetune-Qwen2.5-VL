@@ -549,7 +549,7 @@ def train(use_lora=True):
 
 if __name__ == "__main__":
     import argparse
-    
+    import pdb;pdb.set_trace()   
     parser = argparse.ArgumentParser(description='Train Qwen2.5-VL model with LoRA or full fine-tuning')
     parser.add_argument('--use_lora', type=str, default='1', choices=['0', '1'],
                        help='Use LoRA (1) or full fine-tuning (0). Default: 1')

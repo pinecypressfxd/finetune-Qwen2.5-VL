@@ -1,8 +1,7 @@
 # Fine-tuning Qwen2.5-VL-3B
 
-
 ### News/Updates
-* 2025/08/06
+* 2025/08/13
   * Added LoRA (Low-Rank Adaptation) fine-tuning support for more efficient training.
   * Added comprehensive comparison between full fine-tuning and LoRA approaches.
   * Updated all dependencies to the latest versions, new version can be found in the requirements.
@@ -14,7 +13,7 @@ In the past five months since Qwen2-VL’s release, numerous developers have bui
 
 <img src="readme_imgs/1.jpeg" width="100%" height="40%">   
     
-I personally prefer simple and transparent code, so I wrote a fine-tuning code script for Qwen2.5-VL, hoping to help anyone who like to write their own training loops.  
+I personally prefer simple and transparent code, so I wrote a fine-tuning code script for Qwen2.5-VL, hoping to help anyone who likes to write their own training loops.  
 
 I have a WeChat subscription account "Backpropagation", where I occasionally write some technical articles, including this one ( https://mp.weixin.qq.com/s/mN9Pxpd2Wciw1-IAoFc08A ), welcome to follow.
 <img src="readme_imgs/3.jpg" width="20%" height="20%"> 
@@ -25,7 +24,7 @@ I have a WeChat subscription account "Backpropagation", where I occasionally wri
 ```bash
 %git clone https://github.com/zhangfaen/finetune-Qwen2.5-VL
 %cd finetune-Qwen2.5-VL
-%conda create --name qwen-vl-2.5 python=3.135
+%conda create --name qwen-vl-2.5 python=3.136
 %conda activate qwen-vl-2.5
 %pip install -r requirements.txt
 ```
@@ -50,8 +49,20 @@ Build cuda_12.4.r12.4/compiler.34097967_0
 
 You can run the following command to begin:
 ```bash
-./finetune_distributed.sh # Note that the CUDA_VISIBLE_DEVICES variable in this file should be set to the appropriate value
+./finetune_distributed_without_LoRA.sh # Note that the CUDA_VISIBLE_DEVICES variable in this file should be set to the appropriate value
 ```   
+If you want to debug with LoRA, please refer to the following commands:
+```bash
+./finetune_distributed_with_LoRA.sh
+```
+### Benchmark Comparison with LoRA
+We provide comprehensive benchmarks comparing full fine-tuning and LoRA approaches to help you debug and compare the best method for your use case.
+
+You can run both approaches and compare their results:
+```bash
+# Compare results using our benchmark script
+./Benchmark_comparison_with_LoRA.sh
+```
 
 ### Test the Fine-tuned Model
 
@@ -64,7 +75,7 @@ Note: The test_on_trained_model_by_us.py file defines model_dir. If you have fin
 
 
 
-The above test_on_trained_model_by_us.py both describe the two pictures under test_data/.
+The above test_on_trained_model_by_us.py describes both pictures under test_data/.
 
 
 Overall, the fine-tuned model seems to have not been greatly affected in performance. The following picture is a log file during the fine-tuning process.

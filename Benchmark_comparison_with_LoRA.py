@@ -12,7 +12,8 @@ from pathlib import Path
 # Import training function from the main training script
 import sys
 sys.path.append('.')
-from LoRA_finetune_distributed import train
+from finetune_distributed import train
+from finetune_distributed import compare_training_methods
 
 def run_training_with_lora():
     """Run training with LoRA enabled."""
@@ -117,7 +118,6 @@ def main():
             # Import the comparison function
             import sys
             sys.path.append('.')
-            from LoRA_finetune_distributed import compare_training_methods
             
             # Create a simple logger for the comparison
             import logging

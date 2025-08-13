@@ -8,12 +8,7 @@ from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
 from qwen_vl_utils import process_vision_info
 
 # LoRA imports
-try:
-    from peft import LoraConfig, get_peft_model, TaskType, PeftModel
-    PEFT_AVAILABLE = True
-except ImportError:
-    print("Warning: PEFT not available. Please install with: pip install peft")
-    PEFT_AVAILABLE = False
+from peft import LoraConfig, get_peft_model, TaskType, PeftModel
 
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
@@ -202,9 +197,6 @@ def setup_lora_config():
     Returns:
         LoraConfig: LoRA configuration object
     """
-    if not PEFT_AVAILABLE:
-        raise ImportError("PEFT not available. Please install with: pip install peft")
-    
     lora_config = LoraConfig(
         task_type=TaskType.CAUSAL_LM,
         inference_mode=False,
@@ -239,26 +231,17 @@ def apply_lora_to_model(model, logger=None):
     Returns:
         model: Model with LoRA applied
     """
-    if not PEFT_AVAILABLE:
-        if logger:
-            logger.warning("PEFT not available, using full fine-tuning")
-        return model
+    lora_config = setup_lora_config()
+    model = get_peft_model(model, lora_config)
     
-    try:
-        lora_config = setup_lora_config()
-        model = get_peft_model(model, lora_config)
+    # Print trainable parameters info (only on main process)
+    if logger:
+        model.print_trainable_parameters()
+        logger.info("Successfully applied LoRA to the model")
+    
+    return model
         
-        # Print trainable parameters info (only on main process)
-        if logger:
-            model.print_trainable_parameters()
-            logger.info("Successfully applied LoRA to the model")
-        
-        return model
-        
-    except Exception as e:
-        if logger:
-            logger.warning(f"Failed to apply LoRA: {e}. Using full fine-tuning")
-        return model
+    
 
 
 def plot_training_loss(loss_history, epoch_losses, output_dir, logger, training_type="LoRA"):
@@ -423,7 +406,7 @@ def train(use_lora=True):
     )
 
     # Apply LoRA to the model based on parameter
-    if use_lora and PEFT_AVAILABLE:
+    if use_lora:
         if accelerator.is_local_main_process:
             logger.info("Applying LoRA to the model...")
         # Pass logger only on main process, None on other processes
@@ -461,7 +444,8 @@ def train(use_lora=True):
     epochs = 10
     
     # Use different learning rate for LoRA vs full fine-tuning
-    if use_lora and PEFT_AVAILABLE and hasattr(model, 'peft_config'):
+    if use_lora:
+        assert hasattr(model, 'peft_config'), "Model should have peft_config when using LoRA"
         # Higher learning rate for LoRA training
         lr = 2e-4
         if accelerator.is_local_main_process:
@@ -517,7 +501,7 @@ def train(use_lora=True):
     unwrapped_model = accelerator.unwrap_model(model)
     
     # Save the model using HuggingFace's pretrained format
-    if use_lora and PEFT_AVAILABLE and hasattr(unwrapped_model, 'peft_config'):
+    if use_lora and hasattr(unwrapped_model, 'peft_config'):
         # Save LoRA model
         if accelerator.is_local_main_process:
             logger.info("Saving LoRA model...")
@@ -544,17 +528,17 @@ def train(use_lora=True):
 
     # Plot loss history
     if accelerator.is_local_main_process:
-        training_type = "LoRA" if use_lora and PEFT_AVAILABLE and hasattr(model, 'peft_config') else "Full"
+        training_type = "LoRA" if use_lora and hasattr(model, 'peft_config') else "Full"
         plot_training_loss(loss_history, epoch_losses, output_dir, logger, training_type)
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='Train Qwen2.5-VL model with LoRA or full fine-tuning')
-    parser.add_argument('--use_lora', type=str, default='1', choices=['0', '1'],
-                       help='Use LoRA (1) or full fine-tuning (0). Default: 1')
-    
+    parser.add_argument('--use_lora', type=bool, default=True,
+                       help='Use LoRA (True) or full fine-tuning (False). Default: True')
+
     args = parser.parse_args()
-    use_lora = args.use_lora == '1'
+    use_lora = args.use_lora == True
     
     train(use_lora=use_lora)
 

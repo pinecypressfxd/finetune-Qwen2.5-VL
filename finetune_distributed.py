@@ -220,31 +220,24 @@ def setup_lora_config():
     return lora_config
 
 
-def apply_lora_to_model(model, logger=None):
+def apply_lora_to_model(model):
     """
     Apply LoRA to the model.
     
     Args:
         model: The base model
-        logger: Logger instance (can be None in distributed training)
-        
+
     Returns:
         model: Model with LoRA applied
     """
     lora_config = setup_lora_config()
     model = get_peft_model(model, lora_config)
-    
-    # Print trainable parameters info (only on main process)
-    if logger:
-        model.print_trainable_parameters()
-        logger.info("Successfully applied LoRA to the model")
-    
     return model
         
     
 
 
-def plot_training_loss(loss_history, epoch_losses, output_dir, logger, training_type="LoRA"):
+def plot_training_loss(loss_history, epoch_losses, output_dir, training_type="LoRA"):
     """
     Plot training loss history and save to file.
     
@@ -252,14 +245,8 @@ def plot_training_loss(loss_history, epoch_losses, output_dir, logger, training_
         loss_history (list): List of loss values for each training step
         epoch_losses (list): List of average loss values for each epoch
         output_dir (str): Directory to save the plot
-        logger: Logger instance for logging (can be None)
         training_type (str): Type of training ("LoRA" or "Full")
     """
-    if not loss_history:
-        if logger:
-            logger.warning("No loss history to plot")
-        return
-    
     # Create figure with two subplots
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))
     
@@ -295,13 +282,9 @@ def plot_training_loss(loss_history, epoch_losses, output_dir, logger, training_
     json_path = os.path.join(output_dir, f'{training_type.lower()}_loss_data.json')
     with open(json_path, 'w') as f:
         json.dump(loss_data, f, indent=2)
-    
-    if logger:
-        logger.info(f"{training_type} loss plots saved to {plot_path}")
-        logger.info(f"{training_type} loss data saved to {json_path}")
 
 
-def compare_training_methods(lora_loss_data, full_loss_data, output_dir, logger):
+def compare_training_methods(lora_loss_data, full_loss_data, output_dir):
     """
     Compare LoRA and full fine-tuning loss curves.
     
@@ -309,13 +292,8 @@ def compare_training_methods(lora_loss_data, full_loss_data, output_dir, logger)
         lora_loss_data (dict): LoRA training loss data
         full_loss_data (dict): Full fine-tuning loss data
         output_dir (str): Directory to save comparison plots
-        logger: Logger instance for logging (can be None)
     """
-    if not lora_loss_data or not full_loss_data:
-        if logger:
-            logger.warning("Missing loss data for comparison")
-        return
-    
+
     # Create comparison plots
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 12))
     
@@ -380,10 +358,6 @@ def compare_training_methods(lora_loss_data, full_loss_data, output_dir, logger)
     comparison_json_path = os.path.join(output_dir, 'training_comparison.json')
     with open(comparison_json_path, 'w') as f:
         json.dump(comparison_data, f, indent=2)
-    
-    if logger:
-        logger.info(f"Training comparison plots saved to {comparison_path}")
-        logger.info(f"Training comparison data saved to {comparison_json_path}")
 
 def train(use_lora=True):
     """
@@ -409,9 +383,7 @@ def train(use_lora=True):
     if use_lora:
         if accelerator.is_local_main_process:
             logger.info("Applying LoRA to the model...")
-        # Pass logger only on main process, None on other processes
-        current_logger = logger if accelerator.is_local_main_process else None
-        model = apply_lora_to_model(model, current_logger)
+        model = apply_lora_to_model(model)
     else:
         if accelerator.is_local_main_process:
             logger.info("Using full fine-tuning (LoRA disabled)")
@@ -528,7 +500,7 @@ def train(use_lora=True):
 
     # Plot loss history
     if accelerator.is_local_main_process:
-        training_type = "LoRA" if use_lora and hasattr(model, 'peft_config') else "Full"
+        training_type = "LoRA" if use_lora else "Full"
         plot_training_loss(loss_history, epoch_losses, output_dir, logger, training_type)
 
 if __name__ == "__main__":
@@ -537,8 +509,6 @@ if __name__ == "__main__":
     parser.add_argument('--use_lora', type=bool, default=True,
                        help='Use LoRA (True) or full fine-tuning (False). Default: True')
 
-    args = parser.parse_args()
-    use_lora = args.use_lora == True
-    
-    train(use_lora=use_lora)
+    args = parser.parse_args()    
+    train(use_lora=args.use_lora)
 

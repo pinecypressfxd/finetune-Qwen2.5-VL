@@ -125,7 +125,7 @@ def main():
             logger.setLevel(logging.INFO)
             
             # Generate comparison
-            compare_training_methods(lora_data, full_data, comparison_dir, logger)
+            compare_training_methods(lora_data, full_data, comparison_dir)
             
             print(f"Comparison results saved to: {comparison_dir}")
         else:
